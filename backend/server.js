@@ -74,6 +74,132 @@ app.post("/tasks", async (req, res) => {
   }
 });
 
+
+// PUT API: update an existing task using its MongoDB ID
+app.put("/tasks/:id", async (req, res) => {
+  try {
+    // Extract the task ID from the URL
+    const { id } = req.params;
+
+    // Extract the updated fields sent by the user
+    const { title, completed } = req.body;
+
+    // Check that the ID has a valid MongoDB ObjectId format
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        message: "Invalid task ID"
+      });
+    }
+
+    // Create an empty object for the fields we want to update
+    const updates = {};
+
+    // Update the title only if the user provided it
+    if (title !== undefined) {
+      // Reject titles that are not valid, nonempty strings
+      if (typeof title !== "string" || !title.trim()) {
+        return res.status(400).json({
+          message: "Task title must be a nonempty string"
+        });
+      }
+
+      // Remove extra spaces before saving the title
+      updates.title = title.trim();
+    }
+
+    // Update completion status only if the user provided it
+    if (completed !== undefined) {
+      // Ensure completed is a true or false value
+      if (typeof completed !== "boolean") {
+        return res.status(400).json({
+          message: "Completed must be true or false"
+        });
+      }
+
+      // Store the validated completion status
+      updates.completed = completed;
+    }
+
+    // Reject requests that contain no supported fields
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        message: "Provide a title or completed status"
+      });
+    }
+
+    // Find the task by ID and update its fields
+    const updatedTask = await Task.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    // Return 404 if the task doesn't exist
+    if (!updatedTask) {
+      return res.status(404).json({
+        message: "Task not found"
+      });
+    }
+
+    // Return the updated task to the frontend
+    res.json(updatedTask);
+
+  } catch (error) {
+    // Handle unexpected errors during the update
+    res.status(500).json({
+      message: "Failed to update task"
+    });
+  }
+});
+
+
+
+
+
+// DELETE API: remove a task from MongoDB using its ID
+app.delete("/tasks/:id", async (req, res) => {
+  try {
+    // Extract the task ID from the URL
+    const { id } = req.params;
+
+    // Validate the ID before querying MongoDB
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        message: "Invalid task ID"
+      });
+    }
+
+    // Find the matching task and delete it
+    const deletedTask = await Task.findByIdAndDelete(id);
+
+    // Return 404 if no task matches the ID
+    if (!deletedTask) {
+      return res.status(404).json({
+        message: "Task not found"
+      });
+    }
+
+    // Confirm that the task was deleted successfully
+    res.json({
+      message: "Task deleted successfully",
+      task: deletedTask
+    });
+
+  } catch (error) {
+    // Handle unexpected database errors
+    res.status(500).json({
+      message: "Failed to delete task"
+    });
+  }
+});
+
+
+
+
+
 // Connect to MongoDB before starting the server
 async function startServer() {
   try {
