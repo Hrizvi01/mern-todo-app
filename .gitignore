@@ -1,0 +1,19 @@
+
+# Ignore installed dependencies because npm can reinstall them
+node_modules/
+
+# Never upload environment variables or database passwords
+.env
+.env.*
+!.env.example
+
+# Ignore generated application logs
+*.log
+
+# Ignore generated frontend build files
+dist/
+build/
+
+# Ignore operating system files
+.DS_Store
+Thumbs.db
