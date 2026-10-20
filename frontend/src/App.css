@@ -151,3 +151,26 @@
     flex-wrap: wrap;
   }
 }
+
+
+
+/* Make API error messages easy to notice */
+.error-message {
+  padding: 12px;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 14px;
+}
+
+/* Show that a button cannot currently be clicked */
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Make disabled checkboxes visually distinct */
+input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
