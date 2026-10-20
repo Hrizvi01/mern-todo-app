@@ -1,0 +1,153 @@
+
+/* Center the main application card */
+.app-container {
+  max-width: 650px;
+  margin: 70px auto;
+  padding: 35px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* Add space below the heading */
+.app-header {
+  margin-bottom: 30px;
+}
+
+/* Style the main title */
+.app-header h1 {
+  margin: 0 0 8px;
+  color: #202437;
+}
+
+/* Style the subtitle */
+.app-header p {
+  margin: 0;
+  color: #777;
+}
+
+/* Add spacing around the progress section */
+.progress-section {
+  margin-bottom: 25px;
+}
+
+/* Style the progress description */
+.progress-section p {
+  font-size: 14px;
+  color: #555;
+}
+
+/* Create the background track for progress */
+.progress-track {
+  height: 9px;
+  background: #e8e8ef;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+/* Fill the progress track based on completed tasks */
+.progress-fill {
+  height: 100%;
+  background: #6366f1;
+  border-radius: 20px;
+  transition: width 0.3s ease;
+}
+
+/* Arrange the task input and button in a row */
+.task-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+/* Let the task input occupy available space */
+.task-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+/* Style the Add Task button */
+.task-form button {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 8px;
+  background: #6366f1;
+  color: white;
+  cursor: pointer;
+}
+
+/* Add spacing between tasks */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Style each task row */
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #f8f8fc;
+  border-radius: 9px;
+}
+
+/* Let task titles occupy remaining horizontal space */
+.task-item span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+/* Cross out completed task titles */
+.completed {
+  text-decoration: line-through;
+  color: #999;
+}
+
+/* Give task action buttons a common appearance */
+.edit-btn,
+.delete-btn {
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Style the Edit button */
+.edit-btn {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* Style the Delete button */
+.delete-btn {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Center the message displayed when no tasks exist */
+.empty-message {
+  text-align: center;
+  color: #777;
+  padding: 20px;
+}
+
+/* Adjust the layout for smaller mobile screens */
+@media (max-width: 600px) {
+  .app-container {
+    margin: 20px 12px;
+    padding: 20px;
+  }
+
+  .task-form {
+    flex-direction: column;
+  }
+
+  .task-item {
+    flex-wrap: wrap;
+  }
+}
