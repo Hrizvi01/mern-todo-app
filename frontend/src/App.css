@@ -1,119 +1,184 @@
 
-/* Center the main application card */
+/* Center the application and create a card layout */
 .app-container {
-  max-width: 650px;
-  margin: 70px auto;
-  padding: 35px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  width: min(680px, calc(100% - 32px));
+  margin: 60px auto;
+  padding: 36px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(20, 25, 60, 0.09);
 }
 
-/* Add space below the heading */
+/* Add space beneath the application heading */
 .app-header {
   margin-bottom: 30px;
 }
 
-/* Style the main title */
+/* Style the app title */
 .app-header h1 {
   margin: 0 0 8px;
-  color: #202437;
+  font-size: 32px;
+  color: #24243e;
 }
 
 /* Style the subtitle */
 .app-header p {
   margin: 0;
-  color: #777;
+  color: #85859a;
 }
 
-/* Add spacing around the progress section */
+/* Add spacing beneath the progress section */
 .progress-section {
-  margin-bottom: 25px;
+  margin-bottom: 28px;
 }
 
-/* Style the progress description */
-.progress-section p {
+/* Align progress text and percentage */
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
   font-size: 14px;
-  color: #555;
 }
 
-/* Create the background track for progress */
+/* Create the progress bar background */
 .progress-track {
   height: 9px;
-  background: #e8e8ef;
+  background: #ededf5;
   border-radius: 20px;
   overflow: hidden;
 }
 
-/* Fill the progress track based on completed tasks */
+/* Show the dynamically calculated progress */
 .progress-fill {
   height: 100%;
-  background: #6366f1;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
   border-radius: 20px;
   transition: width 0.3s ease;
 }
 
-/* Arrange the task input and button in a row */
+/* Style the progress description */
+.progress-section p {
+  margin: 9px 0 0;
+  color: #85859a;
+  font-size: 13px;
+}
+
+/* Arrange the task input and Add button horizontally */
 .task-form {
   display: flex;
   gap: 10px;
-  margin-bottom: 25px;
+  margin-bottom: 22px;
 }
 
-/* Let the task input occupy available space */
+/* Make the task input occupy available space */
 .task-form input {
   flex: 1;
   min-width: 0;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  padding: 13px 15px;
+  border: 1px solid #dedee9;
+  border-radius: 10px;
+  outline: none;
 }
 
-/* Style the Add Task button */
+/* Highlight the input when it receives focus */
+.task-form input:focus,
+.edit-form input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+/* Style the primary Add button */
 .task-form button {
   padding: 12px 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #6366f1;
   color: white;
+  font-weight: 600;
   cursor: pointer;
 }
 
-/* Add spacing between tasks */
+/* Arrange filter buttons in a row */
+.filter-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+/* Style inactive filters */
+.filter-buttons button {
+  padding: 9px 16px;
+  border: 1px solid #e6e6f0;
+  border-radius: 8px;
+  background: #f7f7fb;
+  color: #666680;
+  cursor: pointer;
+}
+
+/* Highlight the currently selected filter */
+.filter-buttons .selected {
+  background: #6366f1;
+  color: white;
+  border-color: #6366f1;
+}
+
+/* Add consistent spacing between task rows */
 .task-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/* Style each task row */
+/* Give each task a subtle background and rounded corners */
 .task-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
+  padding: 15px;
   background: #f8f8fc;
-  border-radius: 9px;
+  border: 1px solid #f0f0f6;
+  border-radius: 12px;
 }
 
-/* Let task titles occupy remaining horizontal space */
-.task-item span {
+/* Make task titles occupy the remaining space */
+.task-item > span {
   flex: 1;
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
-/* Cross out completed task titles */
+/* Cross out completed tasks */
 .completed {
   text-decoration: line-through;
-  color: #999;
+  color: #a1a1b2;
 }
 
-/* Give task action buttons a common appearance */
+/* Allow the inline edit form to fill available space */
+.edit-form {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 8px;
+}
+
+/* Style the inline editing input */
+.edit-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #dedee9;
+  border-radius: 7px;
+  outline: none;
+}
+
+/* Give task action buttons consistent sizing */
 .edit-btn,
-.delete-btn {
-  padding: 7px 10px;
+.delete-btn,
+.save-btn,
+.cancel-btn {
+  padding: 8px 11px;
   border: none;
-  border-radius: 6px;
+  border-radius: 7px;
   cursor: pointer;
 }
 
@@ -129,32 +194,48 @@
   color: #b91c1c;
 }
 
-/* Center the message displayed when no tasks exist */
-.empty-message {
-  text-align: center;
-  color: #777;
-  padding: 20px;
+/* Style the Save button */
+.save-btn {
+  background: #dcfce7;
+  color: #166534;
 }
 
-/* Adjust the layout for smaller mobile screens */
-@media (max-width: 600px) {
-  .app-container {
-    margin: 20px 12px;
-    padding: 20px;
-  }
-
-  .task-form {
-    flex-direction: column;
-  }
-
-  .task-item {
-    flex-wrap: wrap;
-  }
+/* Style the Cancel button */
+.cancel-btn {
+  background: #e5e7eb;
+  color: #374151;
 }
 
+/* Arrange the footer summary and bulk delete button */
+.app-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 25px;
+  padding-top: 18px;
+  border-top: 1px solid #ededf5;
+  color: #85859a;
+  font-size: 13px;
+}
 
+/* Style the Clear Completed button */
+.app-footer button {
+  padding: 9px 12px;
+  border: 1px solid #e6e6f0;
+  border-radius: 8px;
+  background: white;
+  color: #666680;
+  cursor: pointer;
+}
 
-/* Make API error messages easy to notice */
+/* Display disabled buttons clearly */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Show error messages prominently */
 .error-message {
   padding: 12px;
   margin-bottom: 18px;
@@ -164,13 +245,37 @@
   font-size: 14px;
 }
 
-/* Show that a button cannot currently be clicked */
-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+/* Center loading and empty-state messages */
+.empty-message {
+  padding: 24px;
+  text-align: center;
+  color: #85859a;
 }
 
-/* Make disabled checkboxes visually distinct */
-input[type="checkbox"]:disabled {
-  cursor: not-allowed;
+/* Adjust layout for phones and small screens */
+@media (max-width: 600px) {
+  .app-container {
+    margin: 20px auto;
+    padding: 22px;
+  }
+
+  .app-header h1 {
+    font-size: 27px;
+  }
+
+  .task-form {
+    flex-direction: column;
+  }
+
+  .task-item {
+    flex-wrap: wrap;
+  }
+
+  .edit-form {
+    flex-wrap: wrap;
+  }
+
+  .filter-buttons {
+    flex-wrap: wrap;
+  }
 }

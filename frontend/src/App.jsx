@@ -1,8 +1,8 @@
 
-// Import React Hooks for managing state and loading data
+// Import React Hooks for state and data loading
 import { useEffect, useState } from "react";
 
-// Import our reusable backend API functions
+// Import API functions that communicate with Express
 import {
   getTasks,
   createTask,
@@ -10,280 +10,311 @@ import {
   removeTask,
 } from "./api/tasks";
 
-// Import our existing CSS from Lesson 5
+// Import our reusable task component
+import TaskItem from "./components/TaskItem";
+
+// Import the application's CSS styles
 import "./App.css";
 
-// Create the main React component
 function App() {
-  // Store the text entered in the Add Task input
+  // Store the text entered into the new-task input
   const [taskInput, setTaskInput] = useState("");
 
-  // Store tasks returned by MongoDB through our API
+  // Store tasks returned from our MongoDB backend
   const [tasks, setTasks] = useState([]);
 
-  // Track whether the first task request is loading
-  const [loading, setLoading] = useState(true);
+  // Track the selected filter: all, active, or completed
+  const [filter, setFilter] = useState("all");
 
-  // Store a message when an API request fails
+  // Track loading and API errors
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Disable the Add button while a task is being saved
+  // Prevent duplicate task creation requests
   const [adding, setAdding] = useState(false);
 
-  // Track which task is currently being updated or deleted
-  const [busyTaskId, setBusyTaskId] = useState(null);
+  // Track IDs of tasks currently being modified
+  const [busyIds, setBusyIds] = useState([]);
 
-  // Load saved tasks when the component first appears
+  // Track whether Clear Completed is currently running
+  const [clearing, setClearing] = useState(false);
+
+  // Load saved tasks when the application first opens
   useEffect(() => {
-    // Prevent outdated responses from changing state
-    // after this effect has been cleaned up
+    // Ignore responses from an effect that has been cleaned up
     let ignore = false;
 
-    // Define an async function for fetching tasks
     async function loadTasks() {
       try {
-        // Request the saved tasks from Express
+        // Request all saved tasks from Express
         const response = await getTasks();
 
-        // Axios places the response JSON inside .data
+        // Store the MongoDB tasks in React state
         if (!ignore) {
           setTasks(response.data);
         }
       } catch (err) {
-        // Show a useful message if the backend cannot be reached
+        // Display an error if the request fails
         if (!ignore) {
-          console.error("Failed to load tasks:", err);
+          console.error(err);
           setError("Could not load tasks. Check your backend.");
         }
       } finally {
-        // Stop displaying the loading message
+        // Stop showing the loading indicator
         if (!ignore) {
           setLoading(false);
         }
       }
     }
 
-    // Execute our task-loading function
+    // Run the asynchronous loading function
     loadTasks();
 
-    // Ignore old responses if the effect is cleaned up
+    // Prevent stale responses from updating state
     return () => {
       ignore = true;
     };
   }, []);
 
-  // Create a new task when the form is submitted
+  // Add a task to MongoDB
   async function addTask(event) {
     // Prevent the browser from refreshing the page
     event.preventDefault();
 
-    // Remove unnecessary spaces from the input
+    // Remove extra spaces from the entered title
     const title = taskInput.trim();
 
-    // Reject an empty title or duplicate submission
-    if (!title || adding) {
-      return;
-    }
+    // Reject empty titles and repeated submissions
+    if (!title || adding || clearing) return;
 
-    // Clear previous error messages
+    setAdding(true);
     setError("");
 
-    // Show that the request is in progress
-    setAdding(true);
-
     try {
-      // Send the new title to our Express POST API
+      // Send the task title to the Express POST endpoint
       const response = await createTask(title);
 
-      // MongoDB generates an _id for the saved task.
-      // Add the saved task to our current React state.
-      setTasks((previousTasks) => [
-        ...previousTasks,
-        response.data,
-      ]);
+      // Add the saved MongoDB task to the current list
+      setTasks((previous) => [...previous, response.data]);
 
-      // Clear the input after the task is saved
+      // Clear the input after a successful save
       setTaskInput("");
     } catch (err) {
-      // Keep the input so the user can try again
-      console.error("Failed to add task:", err);
-      setError("Could not add task. Please try again.");
+      // Preserve the entered title if saving fails
+      console.error(err);
+      setError("Failed to add task.");
     } finally {
-      // Enable the Add button again
+      // Re-enable the Add button
       setAdding(false);
     }
   }
 
-  // Toggle a task between complete and incomplete
+  // Toggle a task's completed status
   async function toggleTask(task) {
-    // Prevent overlapping operations on the same task
-    if (busyTaskId !== null) {
-      return;
-    }
+    // Ignore repeated clicks while the task is busy
+    if (busyIds.includes(task._id) || clearing) return;
 
-    // Mark this task as being updated
-    setBusyTaskId(task._id);
+    // Mark the task as busy
+    setBusyIds((previous) => [...previous, task._id]);
     setError("");
 
     try {
-      // Send the opposite completion status to Express
+      // Update completion status in MongoDB
       const response = await updateTask(task._id, {
         completed: !task.completed,
       });
 
-      // Replace the old task with the updated MongoDB task
-      setTasks((previousTasks) =>
-        previousTasks.map((currentTask) =>
-          currentTask._id === task._id
-            ? response.data
-            : currentTask
+      // Replace the old task with the saved task
+      setTasks((previous) =>
+        previous.map((item) =>
+          item._id === task._id ? response.data : item
         )
       );
     } catch (err) {
-      // Show an error if MongoDB couldn't save the change
-      console.error("Failed to update task:", err);
-      setError("Could not update task.");
+      // Keep the old state when the API fails
+      console.error(err);
+      setError("Failed to update task.");
     } finally {
-      // Allow task operations again
-      setBusyTaskId(null);
+      // Mark the task as available again
+      setBusyIds((previous) =>
+        previous.filter((id) => id !== task._id)
+      );
     }
   }
 
-  // Edit an existing task title
-  async function editTask(task) {
-    // Prevent overlapping task operations
-    if (busyTaskId !== null) {
-      return;
-    }
+  // Save a task title from the inline editing form
+  async function editTask(id, title) {
+    // Prevent overlapping requests for the same task
+    if (busyIds.includes(id) || clearing) return false;
 
-    // Ask the user for the replacement title.
-    // We'll improve this prompt in Lesson 7.
-    const newTitle = window.prompt(
-      "Edit your task:",
-      task.title
-    );
-
-    // Stop if the user cancels or submits an empty title
-    if (newTitle === null || !newTitle.trim()) {
-      return;
-    }
-
-    // Avoid an unnecessary API request if nothing changed
-    if (newTitle.trim() === task.title) {
-      return;
-    }
-
-    // Mark this task as busy while saving
-    setBusyTaskId(task._id);
+    // Mark the task as busy
+    setBusyIds((previous) => [...previous, id]);
     setError("");
 
     try {
-      // Send the updated title to the Express PUT API
-      const response = await updateTask(task._id, {
-        title: newTitle.trim(),
-      });
+      // Send the edited title to our Express PUT API
+      const response = await updateTask(id, { title });
 
-      // Replace the matching task with the saved version
-      setTasks((previousTasks) =>
-        previousTasks.map((currentTask) =>
-          currentTask._id === task._id
-            ? response.data
-            : currentTask
+      // Update the task shown in React
+      setTasks((previous) =>
+        previous.map((task) =>
+          task._id === id ? response.data : task
         )
       );
+
+      // Tell TaskItem that saving succeeded
+      return true;
     } catch (err) {
-      // Preserve the old title if the request fails
-      console.error("Failed to edit task:", err);
-      setError("Could not edit task.");
+      // Tell TaskItem to keep its editing form open
+      console.error(err);
+      setError("Failed to edit task.");
+      return false;
     } finally {
-      // Re-enable task actions
-      setBusyTaskId(null);
+      // Allow further actions on this task
+      setBusyIds((previous) =>
+        previous.filter((taskId) => taskId !== id)
+      );
     }
   }
 
-  // Delete a task from MongoDB
+  // Delete one task from MongoDB
   async function deleteTask(id) {
-    // Prevent overlapping task operations
-    if (busyTaskId !== null) {
-      return;
-    }
+    // Prevent overlapping requests
+    if (busyIds.includes(id) || clearing) return;
 
     // Ask for confirmation before permanent deletion
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this task?"
-    );
+    if (!window.confirm("Delete this task?")) return;
 
-    // Stop if the user chooses Cancel
-    if (!confirmed) {
-      return;
-    }
-
-    // Mark the task as busy during deletion
-    setBusyTaskId(id);
+    // Mark this task as busy
+    setBusyIds((previous) => [...previous, id]);
     setError("");
 
     try {
-      // Request permanent deletion from MongoDB
+      // Remove the task using our Express DELETE API
       await removeTask(id);
 
-      // Remove the deleted task from the React interface
-      setTasks((previousTasks) =>
-        previousTasks.filter((task) => task._id !== id)
+      // Remove the deleted task from the displayed list
+      setTasks((previous) =>
+        previous.filter((task) => task._id !== id)
       );
     } catch (err) {
       // Keep the task visible if deletion fails
-      console.error("Failed to delete task:", err);
-      setError("Could not delete task.");
+      console.error(err);
+      setError("Failed to delete task.");
     } finally {
-      // Allow new task operations
-      setBusyTaskId(null);
+      // Remove the task ID from the busy list
+      setBusyIds((previous) =>
+        previous.filter((taskId) => taskId !== id)
+      );
     }
   }
 
-  // Count the number of completed tasks
+  // Delete every completed task from MongoDB
+  async function clearCompleted() {
+    // Prevent clearing while other operations are running
+    if (clearing || busyIds.length > 0 || adding) return;
+
+    // Find tasks that have been marked completed
+    const completedTasks = tasks.filter(
+      (task) => task.completed
+    );
+
+    // Stop when there are no completed tasks
+    if (completedTasks.length === 0) return;
+
+    // Confirm the user wants to delete these tasks
+    if (!window.confirm("Delete all completed tasks?")) {
+      return;
+    }
+
+    setClearing(true);
+    setError("");
+
+    // Track IDs successfully deleted from MongoDB
+    const deletedIds = [];
+
+    try {
+      // Delete tasks one at a time using our existing API
+      for (const task of completedTasks) {
+        await removeTask(task._id);
+
+        // Remember each successfully deleted task
+        deletedIds.push(task._id);
+
+        // Immediately remove it from the React list
+        setTasks((previous) =>
+          previous.filter((item) => item._id !== task._id)
+        );
+      }
+    } catch (err) {
+      // Earlier successful deletions remain deleted
+      console.error(err);
+      setError(
+        "Some tasks could not be deleted. Please try again."
+      );
+    } finally {
+      // Finish the bulk deletion operation
+      setClearing(false);
+    }
+  }
+
+  // Count completed tasks for the progress display
   const completedCount = tasks.filter(
     (task) => task.completed
   ).length;
 
-  // Calculate the percentage shown in the progress bar
-  const progress =
-    tasks.length === 0
-      ? 0
-      : (completedCount / tasks.length) * 100;
+  // Count how many tasks are still active
+  const activeCount = tasks.length - completedCount;
 
-  // Render the To-Do application
+  // Calculate the percentage of completed tasks
+  const progress = tasks.length
+    ? (completedCount / tasks.length) * 100
+    : 0;
+
+  // Filter tasks based on the selected category
+  const visibleTasks = tasks.filter((task) => {
+    if (filter === "active") return !task.completed;
+    if (filter === "completed") return task.completed;
+    return true;
+  });
+
+  // Render the final application interface
   return (
-    <div className="app-container">
-      {/* Display our application heading */}
+    <main className="app-container">
+      {/* Display the app's name and subtitle */}
       <header className="app-header">
-        <h1>My Tasks</h1>
-        <p>Stay organized, one task at a time.</p>
+        <h1>TaskFlow ✓</h1>
+        <p>Make every day productive.</p>
       </header>
 
-      {/* Display how many tasks are completed */}
-      <div className="progress-section">
-        <p>
-          {completedCount} of {tasks.length} tasks completed
-        </p>
+      {/* Show the completion progress */}
+      <section className="progress-section">
+        <div className="progress-label">
+          <span>Your progress</span>
+          <strong>{Math.round(progress)}%</strong>
+        </div>
 
-        {/* Fill the progress bar according to completion */}
         <div className="progress-track">
           <div
             className="progress-fill"
             style={{ width: `${progress}%` }}
           />
         </div>
-      </div>
 
-      {/* Display API errors without removing the task list */}
+        <p>
+          {completedCount} of {tasks.length} tasks completed
+        </p>
+      </section>
+
+      {/* Display API errors without hiding tasks */}
       {error && (
         <p className="error-message" role="alert">
           {error}
         </p>
       )}
 
-      {/* Submit new tasks to our Express backend */}
-      <form onSubmit={addTask} className="task-form">
+      {/* Form for adding a new task */}
+      <form className="task-form" onSubmit={addTask}>
         <input
           type="text"
           placeholder="What needs to be done?"
@@ -291,79 +322,80 @@ function App() {
           onChange={(event) =>
             setTaskInput(event.target.value)
           }
+          aria-label="New task title"
         />
 
-        {/* Disable the button while saving or for empty input */}
         <button
           type="submit"
-          disabled={adding || !taskInput.trim()}
+          disabled={!taskInput.trim() || adding || clearing}
         >
-          {adding ? "Adding..." : "Add Task"}
+          {adding ? "Adding..." : "+ Add Task"}
         </button>
       </form>
 
-      {/* Show a loading message while fetching initial data */}
+      {/* Buttons for filtering the task list */}
+      <div className="filter-buttons">
+        {["all", "active", "completed"].map((option) => (
+          <button
+            key={option}
+            type="button"
+            className={filter === option ? "selected" : ""}
+            onClick={() => setFilter(option)}
+          >
+            {option.charAt(0).toUpperCase() + option.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Show tasks or the appropriate empty message */}
       {loading ? (
         <p className="empty-message">Loading tasks...</p>
       ) : (
         <div className="task-list">
-          {/* Show this message only when no tasks exist */}
-          {tasks.length === 0 && (
+          {visibleTasks.length === 0 && (
             <p className="empty-message">
-              No tasks yet. Add your first task!
+              {filter === "all"
+                ? "No tasks yet. Add your first task!"
+                : "No tasks in this category."}
             </p>
           )}
 
-          {/* Render each task returned from MongoDB */}
-          {tasks.map((task) => (
-            <div
+          {/* Render each task using our reusable component */}
+          {visibleTasks.map((task) => (
+            <TaskItem
               key={task._id}
-              className="task-item"
-            >
-              {/* Toggle the completion status in MongoDB */}
-              <input
-                type="checkbox"
-                checked={task.completed}
-                disabled={busyTaskId !== null}
-                onChange={() => toggleTask(task)}
-                aria-label={`Complete ${task.title}`}
-              />
-
-              {/* Cross out the title when the task is completed */}
-              <span
-                className={
-                  task.completed ? "completed" : ""
-                }
-              >
-                {task.title}
-              </span>
-
-              {/* Update the task title through our PUT API */}
-              <button
-                type="button"
-                className="edit-btn"
-                disabled={busyTaskId !== null}
-                onClick={() => editTask(task)}
-              >
-                Edit
-              </button>
-
-              {/* Permanently delete the task through our API */}
-              <button
-                type="button"
-                className="delete-btn"
-                disabled={busyTaskId !== null}
-                onClick={() => deleteTask(task._id)}
-              >
-                Delete
-              </button>
-            </div>
+              task={task}
+              onToggle={toggleTask}
+              onEdit={editTask}
+              onDelete={deleteTask}
+              disabled={
+                busyIds.includes(task._id) || clearing
+              }
+            />
           ))}
         </div>
       )}
-    </div>
+
+      {/* Display remaining tasks and bulk delete action */}
+      <footer className="app-footer">
+        <span>{activeCount} active tasks</span>
+
+        <button
+          type="button"
+          onClick={clearCompleted}
+          disabled={
+            completedCount === 0 ||
+            clearing ||
+            adding ||
+            busyIds.length > 0
+          }
+        >
+          {clearing ? "Clearing..." : "Clear Completed"}
+        </button>
+      </footer>
+    </main>
   );
 }
 
-// Export App so main.jsx can render it
+// Export the component for main.jsx
 export default App;
